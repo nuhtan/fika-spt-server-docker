@@ -163,7 +163,7 @@ extract_7zip_files() {
             echo "  Unzipping $z" >> $download_unzip_install_logs_filepath
             # -o to specify directory (which will be deleted during cleanup below).
             # &>> to redirect all normal and error outputs to log file as append
-            7zz x "$z" -o$tmp_extracted_dir &>> $download_unzip_install_logs_filepath;
+            7z x "$z" -o$tmp_extracted_dir &>> $download_unzip_install_logs_filepath;
             # remove it once downloaded
             rm "$z"
         done
