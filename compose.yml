@@ -1,7 +1,6 @@
 services:
   fika-server:
-    # Built locally from PR #89 (SPT 4.1.1 / Fika 2.4.0) ahead of official release — see build.md
-    image: fika-spt-server-docker:4.1.1
+    image: ghcr.io/nekogravitycat/fika-spt-server-docker:4.1.1
     ports:
       - 6969:6969
     environment:
@@ -20,7 +19,7 @@ services:
       # If you don't want to automatically change the SPT server IPs to allow it to listen on all interfaces, set this to false.
       - LISTEN_ALL_NETWORKS=true
       # If you want to override the timezone. See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for a list of valid TZ codes
-      # - TZ=US/Eastern
+      - TZ=Asia/Taipei
       # If you want to override the SPT version for this container, set this variable to the version string
       # The version should follow the release archive name format <SPT_VERSION>-<EFT_BUILD_NUMBER>-<SPT_GIT_SHA>
       # user folder backups will be disabled
