@@ -3,3 +3,6 @@
 
 # Pre-commit cache
 .pre-commit-cache/
+
+# Local SPT server files (bind-mounted via docker-compose)
+server/

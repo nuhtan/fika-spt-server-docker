@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
 
 RUN apt update && apt install -y --no-install-recommends \
     curl \
@@ -19,7 +19,7 @@ ENV FIKA_VERSION=$FIKA_VERSION
 
 WORKDIR /opt/build
 RUN curl -sL "https://spt-releases.modd.in/SPT-${SPT_VERSION}.7z" -o spt.7z
-RUN 7zz x spt.7z
+RUN 7z x spt.7z
 
 COPY entrypoint.sh /usr/bin/entrypoint
 COPY scripts/backup.sh /usr/bin/backup

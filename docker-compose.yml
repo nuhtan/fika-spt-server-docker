@@ -1,6 +1,7 @@
 services:
   fika-server:
-    image: ghcr.io/zhliau/fika-spt-server-docker:latest
+    # Built locally from PR #89 (SPT 4.1.1 / Fika 2.4.0) ahead of official release — see build.md
+    image: fika-spt-server-docker:4.1.1
     ports:
       - 6969:6969
     environment:

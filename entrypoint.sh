@@ -30,7 +30,6 @@ fika_config_path=assets/configs/fika.jsonc
 fika_mod_dir=$spt_dir/user/mods/fika-server
 fika_artifact=Fika.Server.Release.$fika_version.zip
 fika_release_url="https://github.com/project-fika/Fika-Server-CSharp/releases/download/v$fika_version/$fika_artifact"
-fika_remote_SHA=$(curl -s "https://api.github.com/repos/project-fika/Fika-Server-CSharp/git/refs/tags/v$fika_version" | grep -oP '"sha":\s*"\K[^"]+')
 
 auto_update_spt=${AUTO_UPDATE_SPT:-false}
 
@@ -149,19 +148,18 @@ validate() {
         fi
 
         # Validate fika version based on FIKA_MODE
-        # Since they (fika) don't use proper versioning, but they do include the release SHA in the DLL, we can use that to check if we need to update
-        # TODO: Add proper version check to validate if there is a new version available.
-            # This is essentially done by running a curl against fika github for all releases and checking for a later version than expected $fika_version
+        # As of Fika-Server-CSharp, FikaServer.dll's ProductVersion is the plain release semver
+        # (e.g. "2.4.0") rather than a "version+sha" string, so compare it directly.
         case "$fika_mode" in
             custom)
                 echo "Skipping Fika validation (FIKA_MODE=custom)"
                 ;;
             install|auto-update)
                 if [[ -f $fika_mod_dir/FikaServer.dll ]]; then
-                    fika_local_SHA=$(exiftool -s -s -s -ProductVersion $fika_mod_dir/FikaServer.dll | grep -oP '[0-9.]+\+\K.*')
+                    fika_local_version=$(exiftool -s -s -s -ProductVersion $fika_mod_dir/FikaServer.dll)
                 fi
-                if [[ "$fika_local_SHA" != "$fika_remote_SHA" ]]; then
-                    echo "Fika SHA mismatch: found:$fika_local_SHA != expected:$fika_remote_SHA"
+                if [[ "$fika_local_version" != "$fika_version" ]]; then
+                    echo "Fika version mismatch: found:$fika_local_version != expected:$fika_version"
                     if [[ "$fika_mode" == "auto-update" ]]; then
                         echo "Auto-updating Fika version to $fika_version"
                         try_update_fika
@@ -233,10 +231,11 @@ set_timezone() {
 ########
 install_fika_mod() {
     echo "Installing Fika servermod version $fika_version"
-    # Assumes fika_server.zip artifact contains user/mods/fika-server
+    # As of Fika 2.4.0 (Fika-Server-CSharp), the artifact nests user/mods/fika-server under a
+    # top-level SPT_Runtime/ folder, matching the SPT 4.1 archive layout.
     curl -sL $fika_release_url -O
     unzip -q $fika_artifact -d $mounted_dir/temp_fika/
-    mv $mounted_dir/temp_fika/SPT/user/mods/fika-server $spt_dir/user/mods/
+    mv $mounted_dir/temp_fika/SPT_Runtime/user/mods/fika-server $spt_dir/user/mods/
     rm -r $mounted_dir/temp_fika
     rm $fika_artifact
     echo "Installation complete"
@@ -287,7 +286,14 @@ install_spt() {
             curl -sL "https://spt-releases.modd.in/SPT-${force_spt_version}.7z" -o ${forced_spt_version_archive}
             # Remove the server files, since databases tend to be different between versions
             rm -rf $spt_data_dir
-            7zz x ${forced_spt_version_archive} -aoa
+            # As of SPT 4.1, the archive's server files are nested under a top-level SPT_Runtime/
+            # folder alongside unrelated Windows client/BepInEx files, so extract to a temp dir
+            # and pull out just the runtime contents.
+            rm -rf ${mounted_dir}/temp_spt_force
+            7z x ${forced_spt_version_archive} -aoa -o${mounted_dir}/temp_spt_force
+            mkdir -p $spt_dir
+            cp -r ${mounted_dir}/temp_spt_force/SPT_Runtime/. $spt_dir/
+            rm -rf ${mounted_dir}/temp_spt_force
         else
             echo "Version already downloaded and presumed installed. Skipping SPT installation."
             echo "If you want to force reinstall this server version ${force_spt_version}, remove the SPT-*.7z archive in your mounted server files directory."
@@ -295,7 +301,10 @@ install_spt() {
     else
         # Remove the server files, since databases tend to be different between versions
         rm -rf $spt_data_dir
-        cp -r $build_dir/* $mounted_dir
+        # As of SPT 4.1, the built-in image files are nested under a top-level SPT_Runtime/
+        # folder alongside unrelated Windows client/BepInEx files, so only pull out the runtime.
+        mkdir -p $spt_dir
+        cp -r $build_dir/SPT_Runtime/. $spt_dir/
     fi
     make_and_own_spt_dirs
 }
