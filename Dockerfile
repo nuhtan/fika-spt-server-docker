@@ -12,7 +12,7 @@ RUN apt update && apt install -y --no-install-recommends \
     jq \
     dos2unix
 
-ARG SPT_VERSION=4.1.1-40743-e18bd1e
+ARG SPT_VERSION=4.1.2-40743-cf04a11
 ARG FIKA_VERSION=2.4.0
 ENV SPT_VERSION=$SPT_VERSION
 ENV FIKA_VERSION=$FIKA_VERSION
