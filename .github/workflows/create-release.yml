@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - '*.*.*'  # Trigger on semver tags like 4.0.14
+  # Called by update-fika-tag.yml: a tag pushed with the default GITHUB_TOKEN
+  # cannot trigger the `push` event above.
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Semver tag to create the draft release for'
+        required: true
+        type: string
 
 jobs:
   create-release:
@@ -14,11 +22,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Extract version info
         id: version
         run: |
-          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          TAG_NAME="${{ inputs.tag || github.ref_name }}"
           echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
 
           # Get SPT and Fika versions from Dockerfile
@@ -48,6 +58,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           draft: true
+          tag_name: ${{ steps.version.outputs.tag }}
           name: "Release ${{ steps.version.outputs.tag }}"
           body_path: release_notes.md
           generate_release_notes: true

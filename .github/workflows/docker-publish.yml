@@ -11,6 +11,14 @@ on:
     tags: [ '*.*.*' ]
   pull_request:
     branches: [ "master" ]
+  # Called by update-fika-tag.yml: a tag pushed with the default GITHUB_TOKEN
+  # cannot trigger the `push` event above, so the build is invoked directly.
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Semver tag to build and publish'
+        required: true
+        type: string
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -29,6 +37,11 @@ jobs:
       # This is used to complete the identity challenge
       # with sigstore/fulcio when running outside of PRs.
       id-token: write
+    env:
+      # Publish everywhere except PR validation builds. When called via
+      # workflow_call the caller's event is `pull_request` (PR closed), so the
+      # tag input is what distinguishes a real release from a PR check.
+      PUBLISH: ${{ inputs.tag != '' || github.event_name != 'pull_request' }}
 
     steps:
       - name: Delete huge unnecessary tools folder
@@ -36,11 +49,13 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
-        if: github.event_name != 'pull_request'
+        if: env.PUBLISH == 'true'
         uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
         with:
           cosign-release: 'v2.2.4'
@@ -54,7 +69,7 @@ jobs:
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
+        if: env.PUBLISH == 'true'
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -70,6 +85,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=semver,pattern={{version}}
+            type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
@@ -78,7 +94,7 @@ jobs:
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ env.PUBLISH == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
@@ -91,7 +107,7 @@ jobs:
       # transparency data even for private images, pass --force to cosign below.
       # https://github.com/sigstore/cosign
       - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }}
+        if: env.PUBLISH == 'true'
         env:
           # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
           TAGS: ${{ steps.meta.outputs.tags }}

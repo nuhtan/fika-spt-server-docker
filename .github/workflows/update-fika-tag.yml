@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      spt_version: ${{ steps.check.outputs.spt_version }}
+      action: ${{ steps.check.outputs.action }}
 
     steps:
       - name: Checkout repository
@@ -69,3 +72,25 @@ jobs:
           git push origin "${SPT_VERSION}"
 
           echo "Tag ${SPT_VERSION} ${ACTION}d at HEAD (Fika ${FIKA_VERSION})"
+
+  # A tag pushed with the default GITHUB_TOKEN does not fire the `push` event,
+  # so the tag-triggered workflows are invoked directly instead.
+  publish-image:
+    needs: update-tag
+    if: needs.update-tag.outputs.action != 'none' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/docker-publish.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    with:
+      tag: ${{ needs.update-tag.outputs.spt_version }}
+
+  draft-release:
+    needs: update-tag
+    if: needs.update-tag.outputs.action != 'none' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/create-release.yml
+    permissions:
+      contents: write
+    with:
+      tag: ${{ needs.update-tag.outputs.spt_version }}
