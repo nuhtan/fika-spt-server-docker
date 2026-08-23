@@ -18,7 +18,13 @@ ENV SPT_VERSION=$SPT_VERSION
 ENV FIKA_VERSION=$FIKA_VERSION
 
 WORKDIR /opt/build
-RUN curl -sL "https://spt-releases.modd.in/SPT-${SPT_VERSION}.7z" -o spt.7z
+# SPT moved from the sp-tarkov org to SP-Tushonka. The new mirror only carries
+# 4.1.3+, so fall back to the GitHub release asset and then the frozen legacy
+# mirror, which is the only source for <= 4.1.2.
+RUN SPT_VERSION_NUM=$(echo "${SPT_VERSION}" | cut -d'-' -f1); \
+    curl -fSL "https://mirror.sp-tushonka.com/releases/SPT-${SPT_VERSION}.7z" -o spt.7z || \
+    curl -fSL "https://github.com/SP-Tushonka/build/releases/download/${SPT_VERSION_NUM}/SPT-${SPT_VERSION}.7z" -o spt.7z || \
+    curl -fSL "https://spt-releases.modd.in/SPT-${SPT_VERSION}.7z" -o spt.7z
 RUN 7z x spt.7z
 
 COPY entrypoint.sh /usr/bin/entrypoint

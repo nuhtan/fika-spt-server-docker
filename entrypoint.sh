@@ -282,8 +282,20 @@ install_spt() {
         cd ${mounted_dir}
         # check if archive already exists, and extract if so
         if [[ ! -f ${forced_spt_version_archive} ]]; then
-            echo "Downloading https://spt-releases.modd.in/SPT-${force_spt_version}.7z"
-            curl -sL "https://spt-releases.modd.in/SPT-${force_spt_version}.7z" -o ${forced_spt_version_archive}
+            # SPT moved to the SP-Tushonka org; its mirror only carries 4.1.3+, so
+            # fall back to the GitHub release asset and then the frozen legacy
+            # mirror so older FORCE_SPT_VERSION values keep resolving.
+            forced_spt_version_num=$(echo "${force_spt_version}" | cut -d'-' -f1)
+            echo "Downloading SPT ${force_spt_version}"
+            if ! { curl -fsSL "https://mirror.sp-tushonka.com/releases/SPT-${force_spt_version}.7z" -o ${forced_spt_version_archive} ||
+                curl -fsSL "https://github.com/SP-Tushonka/build/releases/download/${forced_spt_version_num}/SPT-${force_spt_version}.7z" -o ${forced_spt_version_archive} ||
+                curl -fsSL "https://spt-releases.modd.in/SPT-${force_spt_version}.7z" -o ${forced_spt_version_archive}; }; then
+                # Drop the empty file curl leaves behind, or the next start would
+                # see it and skip the download as already installed.
+                rm -f ${forced_spt_version_archive}
+                echo "Error: could not download SPT ${force_spt_version} from any known mirror" >&2
+                exit 1
+            fi
             # Remove the server files, since databases tend to be different between versions
             rm -rf $spt_data_dir
             # As of SPT 4.1, the archive's server files are nested under a top-level SPT_Runtime/

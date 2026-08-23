@@ -25,13 +25,16 @@ RUN apt-get update && \
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
         echo "=== AMD64: Downloading pre-compiled binaries ===" && \
         echo "Downloading SPT-${SPT_VERSION}.7z" && \
-        curl -fSL "https://spt-releases.modd.in/SPT-${SPT_VERSION}.7z" -o spt.7z && \
+        SPT_VERSION_NUM=$(echo "${SPT_VERSION}" | cut -d'-' -f1) && \
+        { curl -fSL "https://mirror.sp-tushonka.com/releases/SPT-${SPT_VERSION}.7z" -o spt.7z || \
+          curl -fSL "https://github.com/SP-Tushonka/build/releases/download/${SPT_VERSION_NUM}/SPT-${SPT_VERSION}.7z" -o spt.7z || \
+          curl -fSL "https://spt-releases.modd.in/SPT-${SPT_VERSION}.7z" -o spt.7z; } && \
         ls -lh spt.7z; \
     else \
         echo "=== ARM64: Cloning source repository ===" && \
         SPT_VERSION_NUM=$(echo ${SPT_VERSION} | cut -d'-' -f1) && \
         echo "Cloning branch: ${SPT_VERSION_NUM}" && \
-        git clone --depth 1 --branch ${SPT_VERSION_NUM} https://github.com/sp-tarkov/server-csharp.git spt && \
+        git clone --depth 1 --branch ${SPT_VERSION_NUM} https://github.com/SP-Tushonka/server-csharp.git spt && \
         ls -la spt/; \
     fi
 
