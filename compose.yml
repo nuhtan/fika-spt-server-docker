@@ -1,6 +1,6 @@
 services:
   fika-server:
-    image: ghcr.io/nekogravitycat/fika-spt-server-docker:4.1.2
+    image: ghcr.io/nekogravitycat/fika-spt-server-docker:4.1.3
     ports:
       - 6969:6969
     environment:
