@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sp
 # Script to automatically fetch the latest SPT version information
 # This extracts the download URL from sp-tarkov/build release notes
 
