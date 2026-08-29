@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 build_dir=/opt/build
 mounted_dir=/opt/server

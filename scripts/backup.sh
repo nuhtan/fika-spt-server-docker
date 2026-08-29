@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 mounted_dir=/opt/server
 profiles_dir=$mounted_dir/user/profiles

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Download and install mods based on provided list of urls
 # It does NOT check if the mod was actually installed or what version,it only checks if the url has been downloaded before
