@@ -90,7 +90,7 @@ start_crond() {
 create_running_user() {
     echo "Checking running user/group: $uid:$gid"
     getent group "$gid" || addgroup -g "$gid" spt
-    if [ -z "$(id -un "$uid" 2>/dev/null)" ]; then
+    if ! getent passwd "$uid" >/dev/null 2>&1; then
         echo "User not found, creating user 'spt' with id $uid"
         adduser -u "$uid" -g "$gid" spt
     fi
