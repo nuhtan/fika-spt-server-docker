@@ -1,5 +1,5 @@
-MINE! bump for update
-afasdfadfas
+MINE! Test
+
 # fika-spt-server-docker
 🐳 Clean and easy way to run SPT + Fika server in docker, with auto-updates, profile backups, and the flexibility to modify server files as you wish 🐳
 
