@@ -404,6 +404,6 @@ create_running_user
 change_owner
 set_permissions
 
-set_timezone
+#set_timezone
 
 su - $(id -nu "$uid") -c "cd $spt_dir && ./$spt_binary"
