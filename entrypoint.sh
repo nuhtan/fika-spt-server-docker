@@ -92,7 +92,7 @@ create_running_user() {
     getent group "$gid" || addgroup -g "$gid" spt
     if [ -z "$(id -un "$uid" 2>/dev/null)" ]; then
         echo "User not found, creating user 'spt' with id $uid"
-        adduser --create-home -u "$uid" -g "$gid" spt
+        adduser -u "$uid" -g "$gid" spt
     fi
 }
 
