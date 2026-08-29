@@ -1,13 +1,12 @@
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
 
-RUN apt update && apt install -y --no-install-recommends \
+RUN apk update && apk add \
     curl \
     aria2 \
     ca-certificates \
     unzip \
     7zip \
     vim \
-    cron \
     exiftool \
     jq \
     dos2unix
