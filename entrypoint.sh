@@ -18,7 +18,7 @@ forced_spt_version_archive=SPT-${force_spt_version}.7z
 
 nodejs_spt_data_dir=$mounted_dir/SPT_Data
 spt_nodejs_core_config=$nodejs_spt_data_dir/Server/configs/core.json
-spt_dir=$mounted_dir/SPT
+spt_dir=$mounted_dir/SPT_Runtime
 spt_data_dir=$spt_dir/SPT_Data
 enable_spt_listen_on_all_networks=${LISTEN_ALL_NETWORKS:-false}
 
@@ -236,7 +236,7 @@ install_fika_mod() {
     # Assumes fika_server.zip artifact contains user/mods/fika-server
     curl -sL $fika_release_url -O
     unzip -q $fika_artifact -d $mounted_dir/temp_fika/
-    mv $mounted_dir/temp_fika/SPT/user/mods/fika-server $spt_dir/user/mods/
+    mv $mounted_dir/temp_fika/SPT_Runtime/user/mods/fika-server $spt_dir/user/mods/
     rm -r $mounted_dir/temp_fika
     rm $fika_artifact
     echo "Installation complete"
