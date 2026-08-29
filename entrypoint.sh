@@ -109,7 +109,7 @@ validate() {
     fi
 
     # Must mount /opt/server directory, otherwise the serverfiles are in container and there's no persistence
-    if ! mount | grep -q "$mounted_dir"; then
+    if ! mountpoint -q "$mounted_dir"; then
         echo "Please mount a volume/directory from the host to $mounted_dir. This server container must store files on the host."
         echo "You can do this with docker run's -v flag e.g. '-v /path/on/host:/opt/server'"
         echo "or with docker-compose's 'volumes' directive"
