@@ -359,7 +359,7 @@ install_requested_mods() {
 validate
 
 # If no server binary in this directory, copy our built files in here and run it once
-if ! [ -f "$spt_dir/$spt_binary" ]; then
+if [ ! -f "$spt_dir/$spt_binary" ]; then
     echo "Server files not found, initializing first boot..."
     install_spt
 else
@@ -374,7 +374,7 @@ fi
 # Install fika based on FIKA_MODE. Run each boot to support installing in existing serverfiles that don't have fika installed
 case "$fika_mode" in
     install|auto-update)
-        if ! [ -d "$fika_mod_dir" ]; then
+        if [ ! -d "$fika_mod_dir" ]; then
             echo "No Fika server mod detected (FIKA_MODE=$fika_mode). Beginning installation."
             install_fika_mod
         else
