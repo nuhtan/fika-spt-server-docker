@@ -257,3 +257,163 @@ try_update_fika() {
     mkdir -p "$fika_mod_dir/assets/configs"
     existing_fika_config=$fika_backup_dir/fika-server/$fika_config_path
     if [ -f "$existing_fika_config" ]; then
+        cp "$existing_fika_config" "$fika_mod_dir/$fika_config_path"
+    fi
+    echo "Successfully updated Fika to $fika_version"
+}
+
+set_num_headless_profiles() {
+    if [ -n "${num_headless_profiles}" ] && [ -f "$fika_mod_dir/$fika_config_path" ]; then
+        echo "Setting number of headless profiles to $num_headless_profiles"
+        modified_fika_jsonc="$(jq --arg jq_num_headless_profiles "$num_headless_profiles" '.headless.profiles.amount=($jq_num_headless_profiles | tonumber)' "$fika_mod_dir/$fika_config_path")" && echo -E "${modified_fika_jsonc}" > "$fika_mod_dir/$fika_config_path"
+    fi
+}
+
+#######
+# SPT #
+#######
+install_spt() {
+    # If FORCE_SPT_VERSION is set and archive does not exist, download and override the built in version with provided version
+    # Archive stored in root mounted folder
+    if [ -n "${force_spt_version}" ]; then
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        echo "!! Forcing SPT version to $force_spt_version     !!"
+        echo "!! SPT auto-update is disabled                    !!"
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        cd "${mounted_dir}"
+        # check if archive already exists, and extract if so
+        if ! [ -f "${forced_spt_version_archive}" ]; then
+            echo "Downloading https://modd.in{force_spt_version}.7z"
+            curl -sL "https://modd.in{force_spt_version}.7z" -o "${forced_spt_version_archive}"
+            # Remove the server files, since databases tend to be different between versions
+            rm -rf "$spt_data_dir"
+            7zz x "${forced_spt_version_archive}" -aoa
+        else
+            echo "Version already downloaded and presumed installed. Skipping SPT installation."
+            echo "If you want to force reinstall this server version ${force_spt_version}, remove the SPT-*.7z archive in your mounted server files directory."
+        fi
+    else
+        # Remove the server files, since databases tend to be different between versions
+        rm -rf "$spt_data_dir"
+        cp -r "$build_dir"/* "$mounted_dir"
+    fi
+    make_and_own_spt_dirs
+}
+
+# TODO Anticipate BepInEx too, for Corter-ModSync
+backup_spt_user_dirs() {
+    mkdir -p "$spt_backup_dir"
+    cp -r "$spt_dir/user" "$spt_backup_dir/"
+}
+
+try_update_spt() {
+    if [ "$auto_update_spt" != "true" ]; then
+        echo "SPT Version mismatch: existing server files are SPT $existing_spt_version while this image expects $spt_version"
+        echo "If you wish to use this container to update your SPT Server files, set AUTO_UPDATE_SPT to true"
+        echo "Aborting"
+        exit 1
+    fi
+
+    echo "Updating SPT in-place, from $1 to $spt_version"
+    # Backup SPT, install new version, then halt
+    backup_spt_user_dirs
+    install_spt
+    echo "SPT update completed. We moved from $1 to $spt_version"
+    echo "  "
+    echo "  ==============="
+    echo "  === WARNING ==="
+    echo ""
+    echo "  The user/ folder has been backed up to $spt_backup_dir, but otherwise has been LEFT UNTOUCHED in the server dir."
+    echo "  Please verify your existing mods and profile work with this new SPT version! You may want to delete the mods directory and start from scratch"
+    echo "  Restart this container to bring the server back up"
+    echo ""
+    echo "  ==============="
+    exit 0
+}
+
+spt_listen_on_all_networks() {
+    # Changes the ip and backendIp to 0.0.0.0 so that the server will listen on all network interfaces.
+    http_json=$spt_data_dir/configs/http.json
+    modified_http_json="$(jq '.ip = "0.0.0.0" | .backendIp = "0.0.0.0"' "$http_json")" && echo -E "${modified_http_json}" > "$http_json"
+    # If fika server config exists, modify that too
+    if [ -f "$fika_mod_dir/$fika_config_path" ]; then
+        echo "Setting listen all networks in Fika SPT config override"
+        modified_fika_jsonc="$(jq '.server.SPT.http.ip = "0.0.0.0" | .server.SPT.http.backendIp = "0.0.0.0"' "$fika_mod_dir/$fika_config_path")" && echo -E "${modified_fika_jsonc}" > "$fika_mod_dir/$fika_config_path"
+    fi
+}
+
+##############
+# Other Mods #
+##############
+
+install_requested_mods() {
+    # Run the download & install mods script
+    echo "Downloading and installing other mods"
+    /usr/bin/download_unzip_install_mods "$spt_dir"
+}
+
+##############
+# Run it All #
+##############
+
+validate
+
+# If no server binary in this directory, copy our built files in here and run it once
+if ! [ -f "$spt_dir/$spt_binary" ]; then
+    echo "Server files not found, initializing first boot..."
+    install_spt
+else
+    echo "Found server files, skipping init"
+fi
+
+# Install listen on all interfaces is requested.
+if [ "$enable_spt_listen_on_all_networks" = "true" ]; then
+    spt_listen_on_all_networks
+fi
+
+# Install fika based on FIKA_MODE. Run each boot to support installing in existing serverfiles that don't have fika installed
+case "$fika_mode" in
+    install|auto-update)
+        if ! [ -d "$fika_mod_dir" ]; then
+            echo "No Fika server mod detected (FIKA_MODE=$fika_mode). Beginning installation."
+            install_fika_mod
+        else
+            echo "Fika server mod already exists, skipping installation"
+        fi
+        ;;
+    custom)
+        if ! [ -d "$fika_mod_dir" ]; then
+            echo "WARNING: FIKA_MODE=custom but no Fika server mod found at $fika_mod_dir"
+            echo "Please manually install your custom Fika build to this directory"
+        fi
+        ;;
+    disabled)
+        # No installation needed
+        ;;
+esac
+
+set_num_headless_profiles
+
+if [ "$install_other_mods" = "true" ]; then
+    install_requested_mods
+fi
+
+if [ "$enable_profile_backup" = "true" ]; then
+    echo "  ==============="
+    echo "  === WARNING ==="
+    echo ""
+    echo "  This profile backup feature will be deprecated in the near future"
+    echo "  since it is now built into SPT Server"
+    echo "  ==============="
+    start_crond
+fi
+
+create_running_user
+
+# Own mounted files as running user
+change_owner
+set_permissions
+
+set_timezone
+
+su - $(id -nu "$uid") -c "cd $spt_dir && ./$spt_binary"
