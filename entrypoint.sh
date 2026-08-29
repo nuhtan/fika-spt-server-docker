@@ -92,7 +92,7 @@ create_running_user() {
     getent group "$gid" || addgroup -g "$gid" spt
     if ! getent passwd "$uid" >/dev/null 2>&1; then
         echo "User not found, creating user 'spt' with id $uid"
-        adduser -u "$uid" -g "$gid" spt
+        adduser -u "$uid" -G spt -D spt
     fi
 }
 
