@@ -7,7 +7,6 @@ RUN apk update && apk add \
     unzip \
     7zip \
     vim \
-    cron \
     exiftool \
     jq \
     dos2unix
