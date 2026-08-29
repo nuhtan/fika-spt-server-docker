@@ -89,10 +89,10 @@ start_crond() {
 
 create_running_user() {
     echo "Checking running user/group: $uid:$gid"
-    getent group "$gid" || groupadd -g "$gid" spt
+    getent group "$gid" || addgroup -g "$gid" spt
     if [ -z "$(id -un "$uid" 2>/dev/null)" ]; then
         echo "User not found, creating user 'spt' with id $uid"
-        useradd --create-home -u "$uid" -g "$gid" spt
+        adduser --create-home -u "$uid" -g "$gid" spt
     fi
 }
 
