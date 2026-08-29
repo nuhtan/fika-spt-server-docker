@@ -109,7 +109,7 @@ validate() {
     fi
 
     # Must mount /opt/server directory, otherwise the serverfiles are in container and there's no persistence
-    if [[ ! $(mount | grep $mounted_dir) ]]; then
+    if ! mount | grep -q "$mounted_dir"; then
         echo "Please mount a volume/directory from the host to $mounted_dir. This server container must store files on the host."
         echo "You can do this with docker run's -v flag e.g. '-v /path/on/host:/opt/server'"
         echo "or with docker-compose's 'volumes' directive"
@@ -208,7 +208,7 @@ set_permissions() {
 
 set_timezone() {
     # If the TZ environment variable has been set, use it
-    if [[ ! -z "${TZ}" ]]; then
+    if [[ -n "${TZ}" ]]; then
         # Update the /etc/timezone to the specified time zone
         echo $TZ > /etc/timezone
     else
@@ -282,7 +282,7 @@ install_spt() {
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         cd ${mounted_dir}
         # check if archive already exists, and extract if so
-        if [[ ! -f ${forced_spt_version_archive} ]]; then
+        if ! [ -f "${forced_spt_version_archive}" ]; then
             echo "Downloading https://spt-releases.modd.in/SPT-${force_spt_version}.7z"
             curl -sL "https://spt-releases.modd.in/SPT-${force_spt_version}.7z" -o ${forced_spt_version_archive}
             # Remove the server files, since databases tend to be different between versions
@@ -359,7 +359,7 @@ install_requested_mods() {
 validate
 
 # If no server binary in this directory, copy our built files in here and run it once
-if [[ ! -f "$spt_dir/$spt_binary" ]]; then
+if ! [ -f "$spt_dir/$spt_binary" ]; then
     echo "Server files not found, initializing first boot..."
     install_spt
 else
@@ -374,7 +374,7 @@ fi
 # Install fika based on FIKA_MODE. Run each boot to support installing in existing serverfiles that don't have fika installed
 case "$fika_mode" in
     install|auto-update)
-        if [[ ! -d $fika_mod_dir ]]; then
+        if ! [ -d "$fika_mod_dir" ]; then
             echo "No Fika server mod detected (FIKA_MODE=$fika_mode). Beginning installation."
             install_fika_mod
         else
@@ -382,7 +382,7 @@ case "$fika_mode" in
         fi
         ;;
     custom)
-        if [[ ! -d $fika_mod_dir ]]; then
+        if ! [ -d "$fika_mod_dir" ]; then
             echo "WARNING: FIKA_MODE=custom but no Fika server mod found at $fika_mod_dir"
             echo "Please manually install your custom Fika build to this directory"
         fi
