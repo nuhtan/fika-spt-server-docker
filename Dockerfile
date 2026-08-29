@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
 
-RUN apt update && apt install -y --no-install-recommends \
+RUN apk update && apk install -y --no-install-recommends \
     curl \
     aria2 \
     ca-certificates \
