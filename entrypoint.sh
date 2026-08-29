@@ -30,7 +30,7 @@ fika_config_path=assets/configs/fika.jsonc
 fika_mod_dir=$spt_dir/user/mods/fika-server
 fika_artifact=Fika.Server.Release.$fika_version.zip
 fika_release_url="https://github.com/project-fika/Fika-Server-CSharp/releases/download/v$fika_version/$fika_artifact"
-fika_remote_SHA=$(curl -s "https://api.github.com/repos/project-fika/Fika-Server-CSharp/git/refs/tags/v$fika_version" | grep -oP '"sha":\s*"\K[^"]+')
+fika_remote_SHA=$(curl -s "https://api.github.com/repos/project-fika/Fika-Server-CSharp/git/refs/tags/v$fika_version" | awk -F'"' '/"sha":/ {print $4}')
 
 auto_update_spt=${AUTO_UPDATE_SPT:-false}
 
@@ -158,7 +158,7 @@ validate() {
                 ;;
             install|auto-update)
                 if [[ -f $fika_mod_dir/FikaServer.dll ]]; then
-                    fika_local_SHA=$(exiftool -s -s -s -ProductVersion $fika_mod_dir/FikaServer.dll | grep -oP '[0-9.]+\+\K.*')
+                    fika_local_SHA=$(exiftool -s -s -s -ProductVersion "$fika_mod_dir/FikaServer.dll" | awk -F'+' '{print $2}')
                 fi
                 if [[ "$fika_local_SHA" != "$fika_remote_SHA" ]]; then
                     echo "Fika SHA mismatch: found:$fika_local_SHA != expected:$fika_remote_SHA"
