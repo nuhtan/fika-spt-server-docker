@@ -83,6 +83,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      actions: write
     with:
       tag: ${{ needs.update-tag.outputs.spt_version }}
 
